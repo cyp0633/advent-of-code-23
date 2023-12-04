@@ -65,7 +65,7 @@ pub fn part_two(input: &str) -> Option<u32> {
                     }
                 }
                 if let Some(number_last_match) = line.rfind(numbers[i]) {
-                    if number_last_match > last_index {
+                    if number_last_match >= last_index {
                         last_number = i;
                         last_index = number_last_match;
                     }
@@ -83,12 +83,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(142));
+        assert_eq!(result, None);
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(281));
     }
 }
