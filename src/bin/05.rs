@@ -1,12 +1,12 @@
 advent_of_code::solution!(5);
+use std::cmp;
 
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Eq, PartialOrd, Ord)]
 struct Mapping {
     dst_start: u32,
     src_start: u32,
     length: u32,
 }
-
 
 pub fn part_one(input: &str) -> Option<u32> {
     let items = input.split("\n\n").collect::<Vec<_>>();
@@ -215,10 +215,11 @@ pub fn part_two(input: &str) -> Option<u32> {
         .map(|s| s.parse::<u32>().unwrap())
         .collect::<Vec<_>>()
         .chunks(2)
-        .map(|x| (x[0], x[1]))
+        .map(|x| (x[0], x[0] + x[1]))
         .collect::<Vec<_>>();
     let process_mapping = |x: &str| -> Vec<Mapping> {
-        x.lines()
+        let mut result = x
+            .lines()
             .skip(1)
             .map(|line| {
                 let mut parts = line.split_whitespace();
@@ -231,7 +232,9 @@ pub fn part_two(input: &str) -> Option<u32> {
                     length,
                 }
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+        result.sort_by(|a, b| a.src_start.cmp(&b.src_start));
+        result
     };
     let seed_to_soil = process_mapping(items[1]);
     let soil_to_fertilizer = process_mapping(items[2]);
@@ -241,24 +244,77 @@ pub fn part_two(input: &str) -> Option<u32> {
     let temperature_to_humidity = process_mapping(items[6]);
     let humidity_to_location = process_mapping(items[7]);
 
-    let mut min_position = 0;
+    let mut min_position = u32::MAX;
 
-    let transform_ranges = |ranges: Vec<(u32, u32)>, mappings: &Vec<Mapping>| -> Vec<(u32, u32)> {
-        let mut result = vec![];
-        for range in ranges.iter() {
-
-        }
-        result
-    };
+    let transform_ranges =
+        |original_ranges: Vec<(u32, u32)>, mappings: &Vec<Mapping>| -> Vec<(u32, u32)> {
+            let mut result = vec![];
+            'range: for range in original_ranges.iter() {
+                let mut range_start = range.0; // "cut" the range from start
+                let range_end = range.1; // include start, exclude end
+                for mapping in mappings.iter() {
+                    let mapping_start = mapping.src_start;
+                    let mapping_end = mapping
+                        .src_start
+                        .checked_add(mapping.length)
+                        .unwrap_or(u32::MAX);
+                    if range_start < mapping_start {
+                        // remove the part before the mapping, use original range start
+                        if range_end < mapping_start {
+                            // current range has ended
+                            result.push((range_start, range_end));
+                            break;
+                        } else {
+                            // current range has some overlap with current mapping
+                            // range_start = mapping_start;
+                            // result.push((range_start, mapping_start - 1));
+                            result.push((range_start, mapping_start));
+                            range_start = mapping_start;
+                        }
+                    }
+                    if range_start >= mapping_end {
+                        continue;
+                    }
+                    // now it at least has some overlap
+                    let new_start = cmp::max(range_start, mapping_start)
+                        .wrapping_sub(mapping.src_start)
+                        .wrapping_add(mapping.dst_start);
+                    let new_end = cmp::min(range_end, mapping_end)
+                        .wrapping_sub(mapping.src_start)
+                        .wrapping_add(mapping.dst_start);
+                    result.push((new_start, new_end));
+                    if range_end <= mapping_end {
+                        // current range has ended
+                        continue 'range;
+                    } else {
+                        // current range has some left
+                        range_start = mapping_end;
+                    }
+                }
+                // if still has some left, add it
+                if range_start < range_end {
+                    result.push((range_start, range_end));
+                }
+            }
+            result
+        };
     for seed in seeds.iter() {
         let seed_ranges = vec![(seed.0, seed.1)];
+        print!("Seed {:?} ", seed_ranges.clone());
         let soil_ranges = transform_ranges(seed_ranges, &seed_to_soil);
+        print!("soil {:?} ", soil_ranges.clone());
         let fertilizer_ranges = transform_ranges(soil_ranges, &soil_to_fertilizer);
+        print!("fertilizer {:?} ", fertilizer_ranges.clone());
         let water_ranges = transform_ranges(fertilizer_ranges, &fertilizer_to_water);
+        print!("water {:?} ", water_ranges.clone());
         let light_ranges = transform_ranges(water_ranges, &water_to_light);
+        print!("light {:?} ", light_ranges.clone());
         let temperature_ranges = transform_ranges(light_ranges, &light_to_temperature);
+        print!("temperature {:?} ", temperature_ranges.clone());
         let humidity_ranges = transform_ranges(temperature_ranges, &temperature_to_humidity);
+        print!("humidity {:?} ", humidity_ranges.clone());
         let location_ranges = transform_ranges(humidity_ranges, &humidity_to_location);
+        println!("location {:?}", location_ranges.clone());
         for location_range in location_ranges.iter() {
             if location_range.0 < min_position {
                 min_position = location_range.0;
@@ -282,6 +338,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(46));
     }
 }
