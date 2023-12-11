@@ -1,11 +1,12 @@
 advent_of_code::solution!(5);
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq,Clone,Copy)]
 struct Mapping {
     dst_start: u32,
     src_start: u32,
     length: u32,
 }
+
 
 pub fn part_one(input: &str) -> Option<u32> {
     let items = input.split("\n\n").collect::<Vec<_>>();
@@ -206,7 +207,66 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let items = input.split("\n\n").collect::<Vec<_>>();
+    let seeds = items[0]
+        .strip_prefix("seeds: ")
+        .unwrap()
+        .split_whitespace()
+        .map(|s| s.parse::<u32>().unwrap())
+        .collect::<Vec<_>>()
+        .chunks(2)
+        .map(|x| (x[0], x[1]))
+        .collect::<Vec<_>>();
+    let process_mapping = |x: &str| -> Vec<Mapping> {
+        x.lines()
+            .skip(1)
+            .map(|line| {
+                let mut parts = line.split_whitespace();
+                let dst_start = parts.next().unwrap().parse::<u32>().unwrap();
+                let src_start = parts.next().unwrap().parse::<u32>().unwrap();
+                let length = parts.next().unwrap().parse::<u32>().unwrap();
+                Mapping {
+                    dst_start,
+                    src_start,
+                    length,
+                }
+            })
+            .collect::<Vec<_>>()
+    };
+    let seed_to_soil = process_mapping(items[1]);
+    let soil_to_fertilizer = process_mapping(items[2]);
+    let fertilizer_to_water = process_mapping(items[3]);
+    let water_to_light = process_mapping(items[4]);
+    let light_to_temperature = process_mapping(items[5]);
+    let temperature_to_humidity = process_mapping(items[6]);
+    let humidity_to_location = process_mapping(items[7]);
+
+    let mut min_position = 0;
+
+    let transform_ranges = |ranges: Vec<(u32, u32)>, mappings: &Vec<Mapping>| -> Vec<(u32, u32)> {
+        let mut result = vec![];
+        for range in ranges.iter() {
+
+        }
+        result
+    };
+    for seed in seeds.iter() {
+        let seed_ranges = vec![(seed.0, seed.1)];
+        let soil_ranges = transform_ranges(seed_ranges, &seed_to_soil);
+        let fertilizer_ranges = transform_ranges(soil_ranges, &soil_to_fertilizer);
+        let water_ranges = transform_ranges(fertilizer_ranges, &fertilizer_to_water);
+        let light_ranges = transform_ranges(water_ranges, &water_to_light);
+        let temperature_ranges = transform_ranges(light_ranges, &light_to_temperature);
+        let humidity_ranges = transform_ranges(temperature_ranges, &temperature_to_humidity);
+        let location_ranges = transform_ranges(humidity_ranges, &humidity_to_location);
+        for location_range in location_ranges.iter() {
+            if location_range.0 < min_position {
+                min_position = location_range.0;
+            }
+        }
+    }
+
+    Some(min_position)
 }
 
 #[cfg(test)]
