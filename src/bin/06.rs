@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use regex::Regex;
 
 advent_of_code::solution!(6);
 
@@ -35,7 +36,23 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let lines = input.lines().collect_vec();
+    let pattern = Regex::new(r"[^0-9]+").unwrap();
+    let time = pattern.replace_all(lines[0], "").parse::<f64>().unwrap();
+    let distance = pattern.replace_all(lines[1], "").parse::<f64>().unwrap();
+    let delta = ((time * time) - (4.0 * distance)).sqrt();
+    let x1 = (time + delta) / 2.0;
+    let x2 = (time - delta) / 2.0;
+    let count = if x1 == x1.floor() {
+        x1 as u32 - 1
+    } else {
+        x1.floor() as u32
+    } - if x2 == x2.ceil() {
+        x2 as u32 + 1
+    } else {
+        x2.ceil() as u32
+    } + 1;
+    Some(count)
 }
 
 #[cfg(test)]
@@ -51,6 +68,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(71503));
     }
 }
