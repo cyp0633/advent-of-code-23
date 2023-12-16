@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -186,6 +185,8 @@ fn merge_j(dict: &mut HashMap<&Card2, i32>) {
     dict.remove(&Card2::J);
     if let Some(max_card) = max_card {
         *dict.entry(max_card).or_insert(0) += j_count;
+    } else {
+        dict.insert(&Card2::J, j_count);
     }
 }
 
