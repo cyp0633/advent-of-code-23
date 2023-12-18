@@ -48,6 +48,54 @@ fn dfs(map: &Vec<Vec<char>>, map_dist: &mut Vec<Vec<Option<u32>>>, x: usize, y: 
 pub fn part_one(input: &str) -> Option<u32> {
     let mut max_dist = 0;
     // array of array of chars
+    let mut map = input
+        .lines()
+        .map(|line| line.chars().collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+    let mut map_dist = vec![vec![None; map[0].len()]; map.len()];
+    for x in 0..map.len() {
+        for y in 0..map[x].len() {
+            // Don't just dfs (x,y); it doesn't have a pipe
+            if map[x][y] != 'S' {
+                continue;
+            }
+            let (mut up, mut down, mut left, mut right) = (false, false, false, false);
+            if x > 0 && TOP_CONNECT.contains(&map[x - 1][y]) {
+                up = true;
+            }
+            if x < map.len() - 1 && BOTTOM_CONNECT.contains(&map[x + 1][y]) {
+                down = true;
+            }
+            if y > 0 && LEFT_CONNECT.contains(&map[x][y - 1]) {
+                left = true;
+            }
+            if y < map[x].len() - 1 && RIGHT_CONNECT.contains(&map[x][y + 1]) {
+                right = true;
+            }
+            map_dist[x][y] = Some(0);
+            match (up, down, left, right) {
+                (true, true, false, false) => map[x][y] = '|',
+                (false, false, true, true) => map[x][y] = '-',
+                (true, false, true, false) => map[x][y] = 'J',
+                (false, true, false, true) => map[x][y] = 'F',
+                (true, false, false, true) => map[x][y] = 'L',
+                (false, true, true, false) => map[x][y] = '7',
+                _ => (),
+            }
+            dfs(&map, &mut map_dist, x, y)
+        }
+    }
+    for row in map_dist {
+        for col in row {
+            if let Some(dist) = col {
+                max_dist = max_dist.max(dist);
+            }
+        }
+    }
+    Some(max_dist)
+}
+
+    // array of array of chars
     let map = input
         .lines()
         .map(|line| line.chars().collect::<Vec<_>>())
