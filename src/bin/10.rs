@@ -5,6 +5,9 @@ static RIGHT_CONNECT: [char; 3] = ['-', 'J', '7'];
 static TOP_CONNECT: [char; 3] = ['|', 'F', '7'];
 static BOTTOM_CONNECT: [char; 3] = ['|', 'J', 'L'];
 
+static CHANGE_UP_HALF: [char; 3] = ['|', 'J', 'L'];
+static CHANGE_DOWN_HALF: [char; 3] = ['|', 'F', '7'];
+
 fn dfs(map: &Vec<Vec<char>>, map_dist: &mut Vec<Vec<Option<u32>>>, x: usize, y: usize) {
     let curr = map[x as usize][y as usize];
     let curr_dist = map_dist[x as usize][y as usize];
@@ -95,8 +98,9 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(max_dist)
 }
 
+pub fn part_two(input: &str) -> Option<u32> {
     // array of array of chars
-    let map = input
+    let mut map = input
         .lines()
         .map(|line| line.chars().collect::<Vec<_>>())
         .collect::<Vec<_>>();
@@ -107,36 +111,49 @@ pub fn part_one(input: &str) -> Option<u32> {
             if map[x][y] != 'S' {
                 continue;
             }
+            let (mut up, mut down, mut left, mut right) = (false, false, false, false);
             if x > 0 && TOP_CONNECT.contains(&map[x - 1][y]) {
-                map_dist[x - 1][y] = Some(1);
-                dfs(&map, &mut map_dist, x - 1, y);
+                up = true;
             }
             if x < map.len() - 1 && BOTTOM_CONNECT.contains(&map[x + 1][y]) {
-                map_dist[x + 1][y] = Some(1);
-                dfs(&map, &mut map_dist, x + 1, y);
+                down = true;
             }
             if y > 0 && LEFT_CONNECT.contains(&map[x][y - 1]) {
-                map_dist[x][y - 1] = Some(1);
-                dfs(&map, &mut map_dist, x, y - 1);
+                left = true;
             }
             if y < map[x].len() - 1 && RIGHT_CONNECT.contains(&map[x][y + 1]) {
-                map_dist[x][y + 1] = Some(1);
-                dfs(&map, &mut map_dist, x, y + 1);
+                right = true;
             }
+            map_dist[x][y] = Some(0);
+            match (up, down, left, right) {
+                (true, true, false, false) => map[x][y] = '|',
+                (false, false, true, true) => map[x][y] = '-',
+                (true, false, true, false) => map[x][y] = 'J',
+                (false, true, false, true) => map[x][y] = 'F',
+                (true, false, false, true) => map[x][y] = 'L',
+                (false, true, true, false) => map[x][y] = '7',
+                _ => (),
+            }
+            dfs(&map, &mut map_dist, x, y)
         }
     }
-    for row in map_dist {
-        for col in row {
-            if let Some(dist) = col {
-                max_dist = max_dist.max(dist);
-            }
-        }
-    }
-    Some(max_dist)
-}
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let mut count = 0;
+    for x in 0..map.len() {
+        let (mut up_half, mut down_half) = (false, false);
+        for y in 0..map[x].len() {
+            if map_dist[x][y].is_some() && CHANGE_UP_HALF.contains(&map[x][y]) {
+                up_half = !up_half;
+            }
+            if map_dist[x][y].is_some() && CHANGE_DOWN_HALF.contains(&map[x][y]) {
+                down_half = !down_half;
+            }
+            if up_half && down_half && map_dist[x][y].is_none() {
+                count += 1;
+            }
+        }
+    }
+    Some(count)
 }
 
 #[cfg(test)]
@@ -152,6 +169,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(8));
     }
 }
